@@ -87,20 +87,22 @@ app.get('/api/appointments', (req, res) => {
 // Vapi webhook endpoint to get patient context
 app.post('/api/vapi-webhook', (req, res) => {
   try {
-    console.log('Received webhook from Vapi:', req.body);
+    console.log('Received webhook from Vapi:', JSON.stringify(req.body, null, 2));
     
-    // Extract patient ID from the request
-    // This would depend on how you structure your Vapi call
-    const patientId = req.body.patientId;
+    // Extract patient ID from the request metadata
+    const metadata = req.body.metadata || {};
+    const patientId = metadata.patientId;
     
     if (!patientId) {
-      return res.status(400).json({ error: 'Patient ID is required' });
+      console.log('No patient ID found in request metadata:', metadata);
+      return res.status(400).json({ error: 'Patient ID is required in metadata' });
     }
     
     const data = readData();
     const patient = data.patients.find(p => p.id === patientId);
     
     if (!patient) {
+      console.log(`Patient with ID ${patientId} not found`);
       return res.status(404).json({ error: 'Patient not found' });
     }
     
@@ -169,20 +171,29 @@ app.post('/api/send-reminder/:patientId', async (req, res) => {
       return res.status(500).json({ error: 'Vapi API credentials not configured' });
     }
     
+    // Ensure phone number is in E.164 format
+    const formattedPhone = patient.phoneNumber.startsWith('+') 
+      ? patient.phoneNumber 
+      : `+${patient.phoneNumber}`;
+    
     // Make API call to Vapi to initiate outbound call
     try {
-      console.log(`Calling Vapi API with phone: ${patient.phoneNumber}`);
+      console.log(`Calling Vapi API with phone: ${formattedPhone}`);
+      console.log(`Using VAPI_ASSISTANT_ID: ${VAPI_ASSISTANT_ID}`);
+      console.log(`Using VAPI_PHONE_NUMBER: ${VAPI_PHONE_NUMBER}`);
+      // Don't log the full API key for security, just the first few characters
+      console.log(`Using VAPI_API_KEY (first 8 chars): ${VAPI_API_KEY.substring(0, 8)}...`);
       
       const vapiResponse = await axios.post('https://api.vapi.ai/call/phone', {
         assistant_id: VAPI_ASSISTANT_ID,
-        to: patient.phoneNumber,
-        from: VAPI_PHONE_NUMBER,
+        to: formattedPhone,
+        from: VAPI_PHONE_NUMBER.startsWith('+') ? VAPI_PHONE_NUMBER : `+${VAPI_PHONE_NUMBER}`,
         metadata: {
           patientId: patient.id
         }
       }, {
         headers: {
-          'Authorization': `Bearer ${VAPI_API_KEY}`,
+          'Authorization': `Bearer ${VAPI_API_KEY.trim()}`,
           'Content-Type': 'application/json'
         }
       });
