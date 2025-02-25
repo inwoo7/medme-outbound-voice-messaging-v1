@@ -184,19 +184,22 @@ app.post('/api/send-reminder/:patientId', async (req, res) => {
       // Don't log the full API key for security, just the first few characters
       console.log(`Using VAPI_API_KEY (first 8 chars): ${VAPI_API_KEY.substring(0, 8)}...`);
       
-      const vapiResponse = await axios.post('https://api.vapi.ai/call/phone', {
-        assistant_id: VAPI_ASSISTANT_ID,
-        to: formattedPhone,
-        from: VAPI_PHONE_NUMBER.startsWith('+') ? VAPI_PHONE_NUMBER : `+${VAPI_PHONE_NUMBER}`,
-        metadata: {
-          patientId: patient.id
+      const vapiResponse = await axios.post(
+        `https://api.vapi.ai/call/phone?api_key=${VAPI_API_KEY.trim()}`, 
+        {
+          assistant_id: VAPI_ASSISTANT_ID,
+          to: formattedPhone,
+          from: VAPI_PHONE_NUMBER.startsWith('+') ? VAPI_PHONE_NUMBER : `+${VAPI_PHONE_NUMBER}`,
+          metadata: {
+            patientId: patient.id
+          }
+        }, 
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      }, {
-        headers: {
-          'Authorization': `Bearer ${VAPI_API_KEY.trim()}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      );
       
       console.log('Vapi API response:', vapiResponse.data);
       
