@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Appointment Reminder System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Pharmacy Appointment Reminder System</h1>
+            <p>Schedule appointment reminders for your patients</p>
+        </header>
+
+        <main>
+            <section class="form-section">
+                <h2>Add New Appointment</h2>
+                <form id="appointmentForm">
+                    <div class="form-group">
+                        <label for="firstName">First Name:</label>
+                        <input type="text" id="firstName" name="firstName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lastName">Last Name:</label>
+                        <input type="text" id="lastName" name="lastName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone Number:</label>
+                        <input type="tel" id="phoneNumber" name="phoneNumber" 
+                               placeholder="(123) 456-7890" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="appointmentDateTime">Appointment Date & Time:</label>
+                        <input type="datetime-local" id="appointmentDateTime" 
+                               name="appointmentDateTime" required>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">Add Appointment</button>
+                </form>
+            </section>
+
+            <section class="appointments-section">
+                <h2>Scheduled Appointments</h2>
+                <div class="appointments-list" id="appointmentsList">
+                    <!-- Appointments will be displayed here -->
+                    <p class="empty-message">No appointments scheduled yet.</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Pharmacy Appointment Reminder System</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

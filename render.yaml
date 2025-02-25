@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: pharmacy-reminder-system
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: VAPI_API_KEY
+        sync: false
+      - key: VAPI_ASSISTANT_ID
+        sync: false
+      - key: VAPI_PHONE_NUMBER
+        sync: false
+      - key: SERVER_URL
+        sync: false
