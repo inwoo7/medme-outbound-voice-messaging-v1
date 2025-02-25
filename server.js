@@ -20,8 +20,8 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir);
 }
 
-// Data storage path
-const dataPath = path.join(__dirname, 'data', 'data.json');
+// Data storage path - use the root data.json file
+const dataPath = path.join(__dirname, 'data.json');
 
 // Initialize data file if it doesn't exist
 if (!fs.existsSync(dataPath)) {
@@ -163,59 +163,51 @@ app.post('/api/send-reminder/:patientId', async (req, res) => {
     
     console.log(`Initiating reminder call for patient: ${patient.firstName} ${patient.lastName}`);
     
+    // Check if we have the required Vapi credentials
+    if (!VAPI_API_KEY || !VAPI_ASSISTANT_ID || !VAPI_PHONE_NUMBER) {
+      console.log('Missing Vapi credentials. Please check your .env file.');
+      return res.status(500).json({ error: 'Vapi API credentials not configured' });
+    }
+    
     // Make API call to Vapi to initiate outbound call
     try {
-      // Check if we have the required Vapi credentials
-      if (VAPI_API_KEY && VAPI_ASSISTANT_ID && VAPI_PHONE_NUMBER) {
-        // Make the actual API call to Vapi
-        try {
-          const vapiResponse = await axios.post('https://api.vapi.ai/call/phone', {
-            assistant_id: VAPI_ASSISTANT_ID,
-            to: patient.phoneNumber,
-            from: VAPI_PHONE_NUMBER,
-            metadata: {
-              patientId: patient.id
-            }
-          }, {
-            headers: {
-              'Authorization': `Bearer ${VAPI_API_KEY}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          console.log('Vapi API response:', vapiResponse.data);
-          
-          // Include the call ID in the response
-          res.json({ 
-            message: 'Reminder call initiated successfully', 
-            patientId,
-            callId: vapiResponse.data.id
-          });
-          return; // Exit early since we've already sent the response
-        } catch (apiError) {
-          console.error('Error calling Vapi API:', apiError.message);
-          if (apiError.response) {
-            console.error('Vapi API error response:', apiError.response.data);
-          }
-          throw apiError; // Re-throw to be caught by the outer catch block
+      console.log(`Calling Vapi API with phone: ${patient.phoneNumber}`);
+      
+      const vapiResponse = await axios.post('https://api.vapi.ai/call/phone', {
+        assistant_id: VAPI_ASSISTANT_ID,
+        to: patient.phoneNumber,
+        from: VAPI_PHONE_NUMBER,
+        metadata: {
+          patientId: patient.id
         }
-      } else {
-        // For demo purposes when credentials are missing, simulate a successful API call
-        console.log('Simulating successful Vapi API call (Vapi credentials not configured)');
-      }
+      }, {
+        headers: {
+          'Authorization': `Bearer ${VAPI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Vapi API response:', vapiResponse.data);
       
       // Update the patient record to mark reminder as sent
       patient.reminderSent = true;
       writeData(data);
       
-      // This response is only reached if we're simulating the call
+      // Include the call ID in the response
       res.json({ 
-        message: 'Reminder call initiated successfully (simulated)', 
-        patientId
+        message: 'Reminder call initiated successfully', 
+        patientId,
+        callId: vapiResponse.data.id
       });
     } catch (apiError) {
-      console.error('Error calling Vapi API:', apiError);
-      res.status(500).json({ error: 'Failed to initiate call via Vapi API' });
+      console.error('Error calling Vapi API:', apiError.message);
+      if (apiError.response) {
+        console.error('Vapi API error response:', apiError.response.data);
+      }
+      res.status(500).json({ 
+        error: 'Failed to initiate call via Vapi API',
+        details: apiError.response?.data || apiError.message
+      });
     }
   } catch (error) {
     console.error('Error sending reminder:', error);
