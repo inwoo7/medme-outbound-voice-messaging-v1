@@ -140,7 +140,7 @@ app.post('/api/vapi-webhook', (req, res) => {
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const VAPI_ASSISTANT_ID = process.env.VAPI_ASSISTANT_ID;
 const VAPI_PHONE_NUMBER = process.env.VAPI_PHONE_NUMBER;
-const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000/api/vapi-webhook';
+const SERVER_URL = process.env.SERVER_URL || 'https://medme-outbound-voice-messaging-v1.onrender.com';
 
 // Check if required environment variables are set
 if (!VAPI_API_KEY || !VAPI_ASSISTANT_ID) {
@@ -165,39 +165,53 @@ app.post('/api/send-reminder/:patientId', async (req, res) => {
     
     // Make API call to Vapi to initiate outbound call
     try {
-      // This is where you would make the actual API call to Vapi
-      // The following is a placeholder for the Vapi API call
-      
-      // Uncomment this code block when you have your Vapi API credentials
-      /*
-      const vapiResponse = await axios.post('https://api.vapi.ai/call/phone', {
-        assistant_id: VAPI_ASSISTANT_ID,
-        to: patient.phoneNumber,
-        from: VAPI_PHONE_NUMBER,
-        metadata: {
-          patientId: patient.id
+      // Check if we have the required Vapi credentials
+      if (VAPI_API_KEY && VAPI_ASSISTANT_ID && VAPI_PHONE_NUMBER) {
+        // Make the actual API call to Vapi
+        try {
+          const vapiResponse = await axios.post('https://api.vapi.ai/call/phone', {
+            assistant_id: VAPI_ASSISTANT_ID,
+            to: patient.phoneNumber,
+            from: VAPI_PHONE_NUMBER,
+            metadata: {
+              patientId: patient.id
+            }
+          }, {
+            headers: {
+              'Authorization': `Bearer ${VAPI_API_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('Vapi API response:', vapiResponse.data);
+          
+          // Include the call ID in the response
+          res.json({ 
+            message: 'Reminder call initiated successfully', 
+            patientId,
+            callId: vapiResponse.data.id
+          });
+          return; // Exit early since we've already sent the response
+        } catch (apiError) {
+          console.error('Error calling Vapi API:', apiError.message);
+          if (apiError.response) {
+            console.error('Vapi API error response:', apiError.response.data);
+          }
+          throw apiError; // Re-throw to be caught by the outer catch block
         }
-      }, {
-        headers: {
-          'Authorization': `Bearer ${VAPI_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('Vapi API response:', vapiResponse.data);
-      */
-      
-      // For demo purposes, we'll simulate a successful API call
-      console.log('Simulating successful Vapi API call');
+      } else {
+        // For demo purposes when credentials are missing, simulate a successful API call
+        console.log('Simulating successful Vapi API call (Vapi credentials not configured)');
+      }
       
       // Update the patient record to mark reminder as sent
       patient.reminderSent = true;
       writeData(data);
       
+      // This response is only reached if we're simulating the call
       res.json({ 
-        message: 'Reminder call initiated successfully', 
-        patientId,
-        // callId: vapiResponse.data.id // In a real implementation, you would get this from the Vapi API response
+        message: 'Reminder call initiated successfully (simulated)', 
+        patientId
       });
     } catch (apiError) {
       console.error('Error calling Vapi API:', apiError);
